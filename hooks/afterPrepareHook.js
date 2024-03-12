@@ -11,6 +11,7 @@ var androidWebHook = require('./lib/android/webSiteHook.js');
 var iosProjectEntitlements = require('./lib/ios/projectEntitlements.js');
 var iosAppSiteAssociationFile = require('./lib/ios/appleAppSiteAssociationFile.js');
 var iosProjectPreferences = require('./lib/ios/xcodePreferences.js');
+var glob = require("glob");
 var ANDROID = 'android';
 var IOS = 'ios';
 
