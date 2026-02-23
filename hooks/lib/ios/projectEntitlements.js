@@ -10,11 +10,9 @@ var path = require('path');
 var fs = require('fs');
 var plist = require('plist');
 var mkpath = require('mkpath');
-var ConfigXmlHelper = require('../configXmlHelper.js');
+var iosProjectHelper = require('./iosProjectHelper.js');
 var ASSOCIATED_DOMAINS = 'com.apple.developer.associated-domains';
 var context;
-var projectRoot;
-var projectName;
 var entitlementsFilePath;
 
 module.exports = {
@@ -137,12 +135,15 @@ function domainsListEntryForHost(host) {
 
 /**
  * Path to entitlements file.
+ * Uses cordova-ios API so the path is correct for both legacy (config name) and new "App" project naming.
  *
  * @return {String} absolute path to entitlements file
  */
 function pathToEntitlementsFile() {
   if (entitlementsFilePath === undefined) {
-    entitlementsFilePath = path.join(getProjectRoot(), 'platforms', 'ios', getProjectName(), 'Resources', getProjectName() + '.entitlements');
+    var locations = iosProjectHelper.getLocations(context);
+    var projName = path.basename(locations.xcodeCordovaProj);
+    entitlementsFilePath = path.join(locations.xcodeCordovaProj, 'Resources', projName + '.entitlements');
   }
 
   return entitlementsFilePath;
@@ -155,20 +156,6 @@ function pathToEntitlementsFile() {
  */
 function getProjectRoot() {
   return context.opts.projectRoot;
-}
-
-/**
- * Name of the project from config.xml
- *
- * @return {String} project name
- */
-function getProjectName() {
-  if (projectName === undefined) {
-    var configXmlHelper = new ConfigXmlHelper(context);
-    projectName = configXmlHelper.getProjectName();
-  }
-
-  return projectName;
 }
 
 // endregion
