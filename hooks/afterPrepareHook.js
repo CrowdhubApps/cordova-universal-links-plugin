@@ -11,6 +11,7 @@ var androidWebHook = require('./lib/android/webSiteHook.js');
 var iosProjectEntitlements = require('./lib/ios/projectEntitlements.js');
 var iosAppSiteAssociationFile = require('./lib/ios/appleAppSiteAssociationFile.js');
 var iosProjectPreferences = require('./lib/ios/xcodePreferences.js');
+var iosSceneDelegatePatch = require('./lib/ios/sceneDelegatePatch.js');
 var glob = require("glob");
 var ANDROID = 'android';
 var IOS = 'ios';
@@ -84,4 +85,7 @@ function activateUniversalLinksInIos(cordovaContext, pluginPreferences) {
 
   // generate apple-site-association-file
   iosAppSiteAssociationFile.generate(cordovaContext, pluginPreferences);
+
+  // forward cold-start universal links under the UIScene lifecycle (cordova-ios 8+)
+  iosSceneDelegatePatch.patchSceneDelegate(cordovaContext);
 }
