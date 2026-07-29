@@ -24,16 +24,59 @@ module.exports = {
 /**
  * Generate entitlements file content.
  *
+ * cordova-ios 7+ projects ship their own entitlements files
+ * (Entitlements-Debug.plist / Entitlements-Release.plist), already wired to
+ * CODE_SIGN_ENTITLEMENTS via xcconfig and already holding other capabilities
+ * (e.g. aps-environment for push). When those exist, inject the
+ * associated-domains entry into them instead of generating a separate
+ * .entitlements file — a separate file would replace CODE_SIGN_ENTITLEMENTS
+ * and silently drop the other entitlements.
+ *
  * @param {Object} cordovaContext - cordova context object
  * @param {Object} pluginPreferences - plugin preferences from config.xml; already parsed
+ * @return {Boolean} true if cordova's own entitlements files were updated;
+ *                   false if the legacy generated file was used (caller must
+ *                   wire it into the xcode project)
  */
 function generateEntitlements(cordovaContext, pluginPreferences) {
   context = cordovaContext;
+
+  var cordovaEntitlementsFiles = getCordovaEntitlementsFiles();
+  if (cordovaEntitlementsFiles.length > 0) {
+    cordovaEntitlementsFiles.forEach(function(filePath) {
+      var entitlements = plist.parse(fs.readFileSync(filePath, 'utf8'));
+      entitlements = injectPreferences(entitlements, pluginPreferences);
+      fs.writeFileSync(filePath, plist.build(entitlements), 'utf8');
+    });
+    console.log('Universal Links plugin: associated-domains injected into ' + cordovaEntitlementsFiles.length + ' cordova entitlements file(s).');
+    return true;
+  }
 
   var currentEntitlements = getEntitlementsFileContent();
   var newEntitlements = injectPreferences(currentEntitlements, pluginPreferences);
 
   saveContentToEntitlementsFile(newEntitlements);
+  return false;
+}
+
+/**
+ * Find cordova-ios's own entitlements files (cordova-ios 7+).
+ *
+ * @return {Array} absolute paths of existing entitlements files
+ */
+function getCordovaEntitlementsFiles() {
+  var appDir;
+  try {
+    appDir = iosProjectHelper.getLocations(context).xcodeCordovaProj;
+  } catch (err) {
+    return [];
+  }
+
+  return ['Entitlements-Debug.plist', 'Entitlements-Release.plist']
+    .map(function(name) {
+      return path.join(appDir, name);
+    })
+    .filter(fs.existsSync);
 }
 
 // endregion

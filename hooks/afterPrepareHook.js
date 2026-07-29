@@ -77,11 +77,15 @@ function activateUniversalLinksInAndroid(cordovaContext, pluginPreferences) {
  * @param {Object} pluginPreferences - plugin preferences from the config.xml file. Basically, content from <universal-links> tag.
  */
 function activateUniversalLinksInIos(cordovaContext, pluginPreferences) {
-  // modify xcode project preferences
-  iosProjectPreferences.enableAssociativeDomainsCapability(cordovaContext);
+  // inject associated-domains into the entitlements. Returns true when
+  // cordova-ios's own Entitlements-*.plist files were updated — those are
+  // already wired into the xcode project, so no pbxproj changes are needed.
+  var usedCordovaEntitlements = iosProjectEntitlements.generateAssociatedDomainsEntitlements(cordovaContext, pluginPreferences);
 
-  // generate entitlements file
-  iosProjectEntitlements.generateAssociatedDomainsEntitlements(cordovaContext, pluginPreferences);
+  if (!usedCordovaEntitlements) {
+    // legacy layout: wire the generated .entitlements file into the xcode project
+    iosProjectPreferences.enableAssociativeDomainsCapability(cordovaContext);
+  }
 
   // generate apple-site-association-file
   iosAppSiteAssociationFile.generate(cordovaContext, pluginPreferences);
