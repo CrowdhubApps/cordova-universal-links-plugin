@@ -29,6 +29,27 @@ It is important not only to redirect users to your app from the web, but also pr
 
 **iOS Note:** you can use this plugin in iOS 8 applications. It will not crash the app, but it also is not gonna handle the links, because this is iOS 9 feature.
 
+**cordova-ios 8 Note:** cordova-ios 8 switched to the UIScene lifecycle. Warm-start links are handled automatically (the plugin listens for `CDVPluginContinueUserActivityNotification`, posted by `CDVSceneDelegate`). Cold-start links, however, are dropped by `CDVSceneDelegate` — it does not forward `connectionOptions.userActivities`. Add this override to your app's `SceneDelegate.swift`:
+
+```swift
+import Cordova
+import UIKit
+
+class SceneDelegate: CDVSceneDelegate {
+    override func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        super.scene(scene, willConnectTo: session, options: connectionOptions)
+
+        // CDVSceneDelegate only forwards URLContexts (custom schemes). Forward
+        // cold-start universal links too, once plugins have initialized.
+        if let activity = connectionOptions.userActivities.first(where: { $0.activityType == NSUserActivityTypeBrowsingWeb }) {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: NSNotification.Name("CDVPluginContinueUserActivityNotification"), object: activity)
+            }
+        }
+    }
+}
+```
+
 ## Documentation
 - [Installation](#installation)
 - [Migrating from previous versions](#migrating-from-previous-versions)
